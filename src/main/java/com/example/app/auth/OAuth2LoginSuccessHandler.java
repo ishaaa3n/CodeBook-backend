@@ -3,6 +3,7 @@ package com.example.app.auth;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -27,6 +28,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final JwtUtil jwtUtil;
     private final NoteRepository noteRepository;
     private final FolderRepository folderRepository;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -58,7 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         String token = jwtUtil.generateToken(user.getId());
-        response.sendRedirect("http://localhost:5173/auth/callback?token=" +  token + "&name=" + java.net.URLEncoder.encode(name, "UTF-8"));
+        response.sendRedirect(frontendUrl + "/auth/callback?token=" + token + "&name=" + java.net.URLEncoder.encode(name, "UTF-8"));
     }
 
     private void seedSampleData(User user) {

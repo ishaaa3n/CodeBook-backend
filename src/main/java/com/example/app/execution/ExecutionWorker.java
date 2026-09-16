@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ExecutionWorker {
 
     private final ExecutionRepository executionRepository;
-    private final DockerExecutionService dockerExecutionService;
+    private final PistonExecutionService pistonExecutionService;
 
     @RabbitListener(queues = "${rabbitmq.queue.execution}")
     public void processExecution(ExecutionMessage message) {
@@ -36,11 +36,10 @@ public class ExecutionWorker {
         execution.setStatus(ExecutionStatus.RUNNING);
         executionRepository.save(execution);
 
-        log.info("Starting Docker execution for executionId={}", executionId);
+        log.info("Starting execution for executionId={}", executionId);
 
-        String image = getDockerImage(message.getLanguage());
-        ExecutionResult result = dockerExecutionService.execute(
-                image, message.getCode(), message.getInput(), executionId);
+        ExecutionResult result = pistonExecutionService.execute(
+                message.getLanguage(), message.getCode(), message.getInput(), executionId);
 
         log.info("Execution {} completed with status={} in {}ms", 
                  executionId, result.getStatus(), result.getExecutionTime());
@@ -58,15 +57,5 @@ public class ExecutionWorker {
         executionRepository.save(execution);
 
         log.info("Execution {} saved to database successfully", executionId);
-    }
-
-    private String getDockerImage(String language) {
-        return switch (language.toLowerCase()) {
-            case "python" -> "python:3.11-slim";
-            case "javascript" -> "node:18-slim";
-            case "java" -> "eclipse-temurin:17-jdk-alpine";
-            case "cpp", "c++" -> "gcc:latest";
-            default -> throw new IllegalArgumentException("Unsupported language: " + language);
-        };
     }
 }
